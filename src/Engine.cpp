@@ -77,17 +77,18 @@ void Engine::initScene()
 	// };
 
 	vector<float> buffer;
-	for (uint i = 0; i < fishMesh->verticesCount(); i+= 3)
+	for (uint i = 0; i < fishMesh->verticesCount(); i++)
 	{
+		uint idx = i*3;
 		// vertices
-		buffer.push_back( *(fishMesh->getData() + i) );
-		buffer.push_back( *(fishMesh->getData() + i+1) );
-		buffer.push_back( *(fishMesh->getData() + i+2) );
+		buffer.push_back( *(fishMesh->getData() + idx) );
+		buffer.push_back( *(fishMesh->getData() + idx+1) );
+		buffer.push_back( *(fishMesh->getData() + idx+2) );
 
 		// normals
-		buffer.push_back( *(fishMesh->getNormalData() + i) );
-		buffer.push_back( *(fishMesh->getNormalData() + i+1) );
-		buffer.push_back( *(fishMesh->getNormalData() + i+2) );
+		buffer.push_back( *(fishMesh->getNormalData() + idx) );
+		buffer.push_back( *(fishMesh->getNormalData() + idx+1) );
+		buffer.push_back( *(fishMesh->getNormalData() + idx+2) );
 	}
 
 	for (uint i = 0; i < buffer.size() / 6; i++)
