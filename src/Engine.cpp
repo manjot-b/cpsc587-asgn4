@@ -91,18 +91,6 @@ void Engine::initScene()
 		buffer.push_back( *(fishMesh->getNormalData() + idx+2) );
 	}
 
-	for (uint i = 0; i < buffer.size() / 6; i++)
-	{
-		cout << "VERT" << *(fishMesh->getData() + i) << " "
-			<< *(fishMesh->getData() + i+1) << " "
-			<< *(fishMesh->getData() + i+2) << " " << endl
-			<< *(fishMesh->getNormalData() + i+3) << " "
-			<< *(fishMesh->getNormalData() + i+4) << " "
-			<< *(fishMesh->getNormalData() + i+5) << " "
-			<< endl;
-	}
-	cout << buffer.size() << endl;
-
 	int componentsPerAttrib[] = {3, 3};	
 	vertexArray = make_shared<VertexArray>(
 		componentsPerAttrib, 2, buffer.data(), buffer.size(), GL_STATIC_DRAW);
