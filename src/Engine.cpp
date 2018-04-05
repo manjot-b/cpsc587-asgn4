@@ -76,9 +76,35 @@ void Engine::initScene()
 	// 	0, 0.5f, -0.3
 	// };
 
-	int componentsPerAttrib = 3;	
+	vector<float> buffer;
+	for (uint i = 0; i < fishMesh->verticesCount(); i+= 3)
+	{
+		// vertices
+		buffer.push_back( *(fishMesh->getData() + i) );
+		buffer.push_back( *(fishMesh->getData() + i+1) );
+		buffer.push_back( *(fishMesh->getData() + i+2) );
+
+		// normals
+		buffer.push_back( *(fishMesh->getNormalData() + i) );
+		buffer.push_back( *(fishMesh->getNormalData() + i+1) );
+		buffer.push_back( *(fishMesh->getNormalData() + i+2) );
+	}
+
+	for (uint i = 0; i < buffer.size() / 6; i++)
+	{
+		cout << "VERT" << *(fishMesh->getData() + i) << " "
+			<< *(fishMesh->getData() + i+1) << " "
+			<< *(fishMesh->getData() + i+2) << " " << endl
+			<< *(fishMesh->getNormalData() + i+3) << " "
+			<< *(fishMesh->getNormalData() + i+4) << " "
+			<< *(fishMesh->getNormalData() + i+5) << " "
+			<< endl;
+	}
+	cout << buffer.size() << endl;
+
+	int componentsPerAttrib[] = {3, 3};	
 	vertexArray = make_shared<VertexArray>(
-		&componentsPerAttrib, 1, fishMesh->getData(), fishMesh->verticesCount() * 3, GL_STATIC_DRAW);
+		componentsPerAttrib, 2, buffer.data(), buffer.size(), GL_STATIC_DRAW);
 
 	glm::mat4 view = glm::lookAt(
 			glm::vec3(0, 0.2f, 0.3f),	// camera position
@@ -113,19 +139,19 @@ void Engine::initScene()
 	vertexArray->use();
     // vertex Attributes
     GLsizei vec4Size = sizeof(glm::vec4);
-    glEnableVertexAttribArray(1); 
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)0);
     glEnableVertexAttribArray(2); 
-    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(vec4Size));
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)0);
     glEnableVertexAttribArray(3); 
-    glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(2 * vec4Size));
+    glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(vec4Size));
     glEnableVertexAttribArray(4); 
-    glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(3 * vec4Size));
+    glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(2 * vec4Size));
+    glEnableVertexAttribArray(5); 
+    glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(3 * vec4Size));
 
-    glVertexAttribDivisor(1, 1);
     glVertexAttribDivisor(2, 1);
     glVertexAttribDivisor(3, 1);
     glVertexAttribDivisor(4, 1);
+    glVertexAttribDivisor(5, 1);
 
 	vertexArray->unuse();
 
