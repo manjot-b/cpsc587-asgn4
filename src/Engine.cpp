@@ -104,10 +104,9 @@ void Engine::initScene()
 	model = glm::translate(model, glm::vec3(xTrans + 2, 0, -2));	
 	modelMatrices.push_back(model);
 
-	GLuint buffer;
-	glGenBuffers(1, &buffer);
-	glBindBuffer(GL_ARRAY_BUFFER, buffer);
-	glBufferData(GL_ARRAY_BUFFER, modelMatrices.size() * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
+	glGenBuffers(1, &instanceVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+	glBufferData(GL_ARRAY_BUFFER, modelMatrices.size() * sizeof(glm::mat4), &modelMatrices[0], GL_DYNAMIC_DRAW);
   
     // unsigned int VAO = rock.meshes[i].VAO;
     // glBindVertexArray(VAO);
@@ -160,8 +159,13 @@ void Engine::processInput()
 
 void Engine::update()
 {
-
+	modelMatrices[0] = glm::rotate(modelMatrices[0], 0.01f, glm::vec3(0, 1, 0));
+	modelMatrices[1] = glm::rotate(modelMatrices[1], -0.01f, glm::vec3(0, 1, 0));
 	
+	vertexArray->use();
+	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, modelMatrices.size() * sizeof(glm::mat4), &modelMatrices[0]);
+	vertexArray->unuse();
 }
 
 void Engine::render()

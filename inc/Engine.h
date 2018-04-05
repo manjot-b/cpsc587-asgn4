@@ -36,6 +36,7 @@ class Engine
         Camera camera;
         std::shared_ptr<TriangleMesh> fishMesh;
         std::vector<glm::mat4> modelMatrices;
+        GLuint instanceVBO;
 
         const float EPSILON = 1E-5;
         float deltaT = 0.0001;                               // in miliseconds
