@@ -32,7 +32,9 @@ class Engine
         bool windowInitialized_;
 
         std::shared_ptr<Shader> shader;
+        std::shared_ptr<Shader> simpleShader;
         std::shared_ptr<VertexArray> vertexArray;
+        std::shared_ptr<VertexArray> boxVertexArray;
         Camera camera;
         std::shared_ptr<TriangleMesh> fishMesh;
         std::vector<glm::mat4> modelMatrices;

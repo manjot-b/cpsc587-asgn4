@@ -18,6 +18,6 @@ void main()
 	gl_Position = projectionView * worldPos;
 	vertexColor = vec4(aPos, 1.0);
 
-	surfaceNormal = (model * vec4(aNormal, 1.0)).xyz;
-	toLight = vec3(-10, -10, -1) - worldPos.xyz; 
+	surfaceNormal = (model * vec4(aNormal, 0.0)).xyz;
+	toLight = vec3(-10, 1, 1) - worldPos.xyz; 
 }

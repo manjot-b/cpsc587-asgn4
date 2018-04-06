@@ -96,7 +96,7 @@ void Engine::initScene()
 		componentsPerAttrib, 2, buffer.data(), buffer.size(), GL_STATIC_DRAW);
 
 	glm::mat4 view = glm::lookAt(
-			glm::vec3(0, 0.2f, 0.3f),	// camera position
+			glm::vec3(0, 0.2f, 0.6f),	// camera position
 			glm::vec3(0.0f, 0.f, 0),		// where camera is lookin
 			glm::vec3(0, 1, 0)				// up vector
 	);
@@ -144,6 +144,47 @@ void Engine::initScene()
 
 	vertexArray->unuse();
 
+	// BOUNDING BOX
+	simpleShader = make_shared<Shader>("rsc/simple_vertex.glsl", "rsc/simple_fragment.glsl");
+	simpleShader->link();
+
+	simpleShader->use();
+	simpleShader->setUniformMatrix4fv("projectionView", camera.getProjectionViewMatrix());
+	simpleShader->unuse();
+
+	buffer.clear();
+	buffer = {
+		// front
+		-0.2, 0.1, 0.1,
+		-0.2, -0.1, 0.1,
+		0.2, -0.1, 0.1,
+		0.2, 0.1, 0.1,
+		
+		// back
+		-0.2, 0.1, -0.3,
+		-0.2, -0.1, -0.3,
+		0.2, -0.1, -0.3,
+		0.2, 0.1, -0.3,	
+	};
+	uint indices[] = {
+		0, 1,
+		1, 2,
+		2, 3,
+		3, 0,
+		
+		4, 5,
+		5, 6,
+		6, 7,
+		7, 4,
+
+		0, 4,
+		1, 5,
+		2, 6,
+		3, 7
+	};
+	boxVertexArray = std::make_shared<VertexArray>(componentsPerAttrib, 1, buffer.data(), buffer.size());
+	boxVertexArray->setElementBuffer(indices, 24);
+
 }
 
 
@@ -189,14 +230,17 @@ void Engine::render()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	shader->use();
-
 	vertexArray->use();
-
-	// glDrawArrays(GL_TRIANGLES, 0, 3);
 	glDrawArraysInstanced(GL_TRIANGLES, 0, fishMesh->verticesCount(), 2); 
 	vertexArray->unuse();
-
 	shader->unuse();
+
+	simpleShader->use();
+	boxVertexArray->use();
+	glDrawElements(GL_LINES, 24, GL_UNSIGNED_INT, 0);
+	boxVertexArray->unuse();
+	simpleShader->unuse();
+
 	glfwSwapBuffers(window_.get());
 	glfwPollEvents();
 }
