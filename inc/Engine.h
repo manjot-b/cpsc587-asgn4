@@ -11,6 +11,13 @@
 #include "VertexArray.h"
 #include "Camera.h"
 #include "TriangleMesh.h"
+#include "Boid.h"
+
+struct Cage 
+{
+    glm::vec3 origin = glm::vec3(-0.2f, -0.1f, 0.1f);
+    glm::vec3 dimension = glm::vec3(0.4f, 0.2f, 0.4f);
+};
 
 class Engine
 {
@@ -39,6 +46,10 @@ class Engine
         std::shared_ptr<TriangleMesh> fishMesh;
         std::vector<glm::mat4> modelMatrices;
         GLuint instanceVBO;
+        
+        std::vector<Boid> boids;
+        float modelScale;
+        struct Cage cage;
 
         const float EPSILON = 1E-5;
         float deltaT = 0.0001;                               // in miliseconds
@@ -49,6 +60,7 @@ class Engine
         void initScene();
         void processInput();
         void update();
-        void render();        
+        void render();       
+        void checkCollisions(Boid& boid); 
 
 };

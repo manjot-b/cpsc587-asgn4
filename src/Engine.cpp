@@ -107,17 +107,31 @@ void Engine::initScene()
 	shader->setUniformMatrix4fv("projectionView", camera.getProjectionViewMatrix());
 	shader->unuse();
 
-	float scale = 1 / max(fishMesh->bbox.width, max(fishMesh->bbox.height, fishMesh->bbox.depth)) * 0.1;
+	modelScale = 1 / max(fishMesh->bbox.width, max(fishMesh->bbox.height, fishMesh->bbox.depth)) * 0.05;
 	// scale = 0.1;
-	float xTrans = -fishMesh->bbox.x - (fishMesh->bbox.width / 2);
-	float yTrans = -fishMesh->bbox.y - (fishMesh->bbox.height / 2);
-	float zTrans = -fishMesh->bbox.z + (fishMesh->bbox.depth / 2);
-	glm::mat4 model(1.0f);
-	model = glm::scale(model, glm::vec3(scale, scale, scale));
-	model = glm::translate(model, glm::vec3(xTrans, yTrans, zTrans));
-	modelMatrices.push_back(model);
-	model = glm::translate(model, glm::vec3(xTrans + 2, 0, -2));	
-	modelMatrices.push_back(model);
+	// float xTrans = -fishMesh->bbox.x - (fishMesh->bbox.width / 2);
+	// float yTrans = -fishMesh->bbox.y - (fishMesh->bbox.height / 2);
+	// float zTrans = -fishMesh->bbox.z + (fishMesh->bbox.depth / 2);
+	// glm::mat4 model(1.0f);
+	// model = glm::scale(model, glm::vec3(scale, scale, scale));
+	// model = glm::translate(model, glm::vec3(xTrans, yTrans, zTrans));
+	// modelMatrices.push_back(model);
+	// model = glm::translate(model, glm::vec3(xTrans + 2, 0, -2));	
+	// modelMatrices.push_back(model);
+
+	struct Boid boid;
+	boid.mass = 1;
+	boid.weight = 1;
+	boid.velocity = glm::vec3(1, 0, -0.1) * 0.1f;
+	boid.netForce = glm::vec3(0, 0, 0);
+	boid.position = glm::vec3(0, 0, 0);
+	boids.push_back(boid);
+	boid.velocity = glm::vec3(0.1, 1, 0) * 0.1f;
+	boids.push_back(boid);
+	boid.velocity = glm::vec3(0.1, 0, 1) * 0.1f;
+	boids.push_back(boid);
+	modelMatrices = vector<glm::mat4>(boids.size(), glm::mat4(1.0f));
+
 
 	glGenBuffers(1, &instanceVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
@@ -155,16 +169,16 @@ void Engine::initScene()
 	buffer.clear();
 	buffer = {
 		// front
-		-0.2, 0.1, 0.1,
-		-0.2, -0.1, 0.1,
-		0.2, -0.1, 0.1,
-		0.2, 0.1, 0.1,
+		cage.origin.x, cage.origin.y + cage.dimension.y, cage.origin.z,
+		cage.origin.x, cage.origin.y, cage.origin.z,
+		cage.origin.x + cage.dimension.x, cage.origin.y, cage.origin.z,
+		cage.origin.x + cage.dimension.x, cage.origin.y + cage.dimension.y, cage.origin.z,
 		
 		// back
-		-0.2, 0.1, -0.3,
-		-0.2, -0.1, -0.3,
-		0.2, -0.1, -0.3,
-		0.2, 0.1, -0.3,	
+		cage.origin.x, cage.origin.y + cage.dimension.y, cage.origin.z - cage.dimension.z,
+		cage.origin.x, cage.origin.y, cage.origin.z - cage.dimension.z,
+		cage.origin.x + cage.dimension.x, cage.origin.y, cage.origin.z - cage.dimension.z,
+		cage.origin.x + cage.dimension.x, cage.origin.y + cage.dimension.y, cage.origin.z - cage.dimension.z,	
 	};
 	uint indices[] = {
 		0, 1,
@@ -215,8 +229,57 @@ void Engine::processInput()
 
 void Engine::update()
 {
-	modelMatrices[0] = glm::rotate(modelMatrices[0], 0.01f, glm::vec3(0, 1, 0));
-	modelMatrices[1] = glm::rotate(modelMatrices[1], -0.01f, glm::vec3(0, 1, 0));
+	for (uint j = 0; j < updatesPerFrame; j++)
+	{
+		for (uint i = 0; i < boids.size(); i++)
+		{
+			checkCollisions(boids[i]);
+			
+			boids[i].velocity += boids[i].netForce * boids[i].weight * deltaT;
+			boids[i].position += boids[i].velocity * deltaT;
+			
+			boids[i].netForce = glm::vec3(0, 0, 0);
+		}
+	}
+
+	for (uint i = 0; i < boids.size(); i++)
+	{
+
+		glm::vec3 normal = boids[i].netForce - gravityForce;
+		normal = normalize(normal);
+
+		glm::vec3 tangent = boids[i].velocity;
+		tangent = normalize(tangent);
+
+		// take care of case where tangent and normal are parallel
+		float dot = glm::dot(normal, tangent);
+		uint k = 0;
+		while (dot == 1 || dot == -1)
+		{
+			tangent[k%3] += EPSILON;
+			tangent = normalize(tangent);
+			dot = glm::dot(normal, tangent);
+			k++;
+		}
+
+		glm::vec3 binormal = glm::cross(tangent, normal);
+
+		binormal = glm::normalize(binormal);
+		normal = glm::cross(binormal, tangent);
+		normal = glm::normalize(normal);
+
+		glm::mat4 model(1.0);
+		// model = glm::scale(model, glm::vec3(modelScale, modelScale, modelScale));
+		model[0] = glm::vec4(binormal, 0) * modelScale;
+		model[1] = glm::vec4(normal, 0) * modelScale;
+		model[2] = glm::vec4(tangent, 0) * modelScale;
+		model[3] = glm::vec4(boids[i].position, 1.0f);
+		
+		modelMatrices[i] = model;
+	}
+
+	// modelMatrices[0] = glm::rotate(modelMatrices[0], 0.01f, glm::vec3(0, 1, 0));
+	// modelMatrices[1] = glm::rotate(modelMatrices[1], -0.01f, glm::vec3(0, 1, 0));
 	
 	vertexArray->use();
 	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
@@ -231,7 +294,7 @@ void Engine::render()
 
 	shader->use();
 	vertexArray->use();
-	glDrawArraysInstanced(GL_TRIANGLES, 0, fishMesh->verticesCount(), 2); 
+	glDrawArraysInstanced(GL_TRIANGLES, 0, fishMesh->verticesCount(), boids.size()); 
 	vertexArray->unuse();
 	shader->unuse();
 
@@ -245,3 +308,37 @@ void Engine::render()
 	glfwPollEvents();
 }
 
+void Engine::checkCollisions(Boid& boid)
+{
+	float cageForce = 20;
+	if (boid.position.x >= cage.origin.x + cage.dimension.x)
+	{
+		// boid.position.x = cage.origin.x + cage.dimension.x - EPSILON;
+		boid.netForce += glm::vec3(-cageForce, 0, 0);
+	}
+
+	if (boid.position.x <= cage.origin.x)
+	{
+		boid.netForce += glm::vec3(cageForce, 0, 0);
+	}
+
+	if (boid.position.y >= cage.origin.y + cage.dimension.y)
+	{
+		boid.netForce += glm::vec3(0, -cageForce, 0);
+	}
+
+	if (boid.position.y <= cage.origin.y)
+	{
+		boid.netForce += glm::vec3(0, cageForce, 0);
+	}
+
+	if (boid.position.z >= cage.origin.z)
+	{
+		boid.netForce += glm::vec3(0, 0, -cageForce);
+	}
+
+	if (boid.position.z <= cage.origin.z - cage.dimension.z)
+	{
+		boid.netForce += glm::vec3(0, 0, cageForce);
+	}
+}
