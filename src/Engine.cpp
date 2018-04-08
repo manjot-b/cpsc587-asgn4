@@ -15,6 +15,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <ctime>
+#include <random>
 
 #include "Engine.h"
 #include "Shader.h"
@@ -76,11 +77,6 @@ void Engine::initScene()
 	shader->link();
 
 	fishMesh = make_shared<TriangleMesh>("rsc/pyrm.obj");
-	// float tempData[] = {
-	// 	-0.5f, -0.5f, 0,
-	// 	0.5f, -0.5f, 0,
-	// 	0, 0.5f, -0.3
-	// };
 
 	vector<float> buffer;
 	for (uint i = 0; i < fishMesh->verticesCount(); i++)
@@ -114,42 +110,25 @@ void Engine::initScene()
 	shader->unuse();
 
 	modelScale = 1 / max(fishMesh->bbox.width, max(fishMesh->bbox.height, fishMesh->bbox.depth)) * modelScale;
-	// scale = 0.1;
-	// float xTrans = -fishMesh->bbox.x - (fishMesh->bbox.width / 2);
-	// float yTrans = -fishMesh->bbox.y - (fishMesh->bbox.height / 2);
-	// float zTrans = -fishMesh->bbox.z + (fishMesh->bbox.depth / 2);
-	// glm::mat4 model(1.0f);
-	// model = glm::scale(model, glm::vec3(scale, scale, scale));
-	// model = glm::translate(model, glm::vec3(xTrans, yTrans, zTrans));
-	// modelMatrices.push_back(model);
-	// model = glm::translate(model, glm::vec3(xTrans + 2, 0, -2));	
-	// modelMatrices.push_back(model);
 
 	struct Boid boid;
 	boid.mass = 1;
 	boid.weight = 1;
 	boid.netForce = glm::vec3(0, 0, 0);
 
-	srand(time(NULL));
+	// use to create random numbers
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_real_distribution<float> dis(0.0f, 1.0f);
+
 	for (uint i = 0; i < bodyCount; i++)
 	{
-		int x = rand();
-		int y = rand();
-		int z = rand();
-
-		x %= 100000;
-		float randX = ((float)x) / 100000;
-		y %= 100000;
-		float randY = ((float)y) / 100000;
-		z %= 100000;
-		float randZ = ((float)x) / 100000;
-
-		randX = cage.dimension.x * randX + cage.origin.x;
-		randY = cage.dimension.y * randY + cage.origin.y;
-		randZ = cage.origin.z - cage.dimension.z * randZ;
+		float randX = cage.dimension.x * dis(gen) + cage.origin.x;
+		float randY = cage.dimension.y * dis(gen) + cage.origin.y;
+		float randZ = cage.origin.z - cage.dimension.z * dis(gen);
 
 		boid.position = glm::vec3(randX, randY, randZ);
-		boid.velocity = glm::vec3(rand(), rand(), rand());
+		boid.velocity = glm::vec3(dis(gen) - 0.5f, dis(gen) - 0.5f, dis(gen) - 0.5f);
 		boid.velocity = glm::normalize(boid.velocity) * maxSpeed;
 		boids.push_back(boid);
 	}
@@ -161,8 +140,6 @@ void Engine::initScene()
 	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
 	glBufferData(GL_ARRAY_BUFFER, modelMatrices.size() * sizeof(glm::mat4), &modelMatrices[0], GL_DYNAMIC_DRAW);
   
-    // unsigned int VAO = rock.meshes[i].VAO;
-    // glBindVertexArray(VAO);
 	vertexArray->use();
     // vertex Attributes
     size_t vec4Size = sizeof(glm::vec4);
