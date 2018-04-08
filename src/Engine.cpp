@@ -128,14 +128,7 @@ void Engine::initScene()
 	struct Boid boid;
 	boid.mass = 1;
 	boid.weight = 1;
-	boid.velocity = glm::vec3(1, 0, -0.1) * 0.05f;
 	boid.netForce = glm::vec3(0, 0, 0);
-	boid.position = glm::vec3(-0.1, 0, 0);
-	boids.push_back(boid);
-	boid.velocity = glm::vec3(0.1, 1, 0) * 0.05f;
-	boids.push_back(boid);
-	boid.velocity = glm::vec3(0.1, 0, 1) * 0.05f;
-	boids.push_back(boid);
 
 	srand(time(NULL));
 	for (uint i = 0; i < bodyCount; i++)
@@ -322,7 +315,7 @@ void Engine::update()
 
 void Engine::render()
 {
-	glClearColor(0.1f, 0.1f, 0.2f, 1.0f);
+	glClearColor(0, 0, 0, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	shader->use();

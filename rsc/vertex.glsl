@@ -6,7 +6,7 @@ layout (location = 2) in mat4 model;
 
 out vec4 vertexColor;
 out vec3 surfaceNormal;
-out vec3 toLight;
+out vec3 toLight[2];
 
 uniform mat4 projectionView;
 
@@ -19,5 +19,6 @@ void main()
 	vertexColor = vec4(aPos, 1.0);
 
 	surfaceNormal = (model * vec4(aNormal, 0.0)).xyz;
-	toLight = vec3(-10, 1, 1) - worldPos.xyz; 
+	toLight[0] = vec3(-10, 1, 1) - worldPos.xyz;
+	toLight[1] = vec3(3, 10, 0) - worldPos.xyz; 
 }

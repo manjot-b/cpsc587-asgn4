@@ -4,22 +4,30 @@ out vec4 fragColor;
 
 in vec4 vertexColor;	// used for input from vertex shader
 in vec3 surfaceNormal;
-in vec3 toLight;
+in vec3 toLight[2];
 
 uniform vec4 uColor;			// used for input from program (CPU)
-vec3 lightColor = vec3(1, 1, 1);
 
 void main()
 {
+	vec3 lightColor[2];
+	lightColor[0] = vec3(0, 0, 1);	
+	lightColor[1] = vec3(1, 0, 0.4);	
+
 	//AMBIENT
-	vec3 ambient = 0.4*lightColor;
+	vec3 ambient = vec3(0.35, 0.35, 0.35);
 
 	//DIFFUSE
+	vec3 diffuse = vec3(0, 0, 0);
+	vec3 unitToLight;
 	vec3 unitNormal = normalize(surfaceNormal);
-	vec3 unitToLight = normalize(toLight);
-	float diffBrightness = max ( dot(unitNormal, unitToLight), 0);
-	vec3 diffuse = diffBrightness * lightColor * 0.8;
-
+	
+	for (int i = 0; i < 2; i++)	// 2 light sources
+	{
+		unitToLight = normalize(toLight[i]);
+		float diffBrightness = max ( dot(unitNormal, unitToLight), 0);
+		diffuse = diffuse + (lightColor[i] * diffBrightness);
+	}
 	// fragColor = vertexColor;
-	fragColor = vec4(ambient + diffuse, 1.0) * vec4(0, 0.1, 1, 1);
+	fragColor = vec4(ambient + diffuse, 1.0) * vec4(0.3, 0.1, 1, 1);
 }
