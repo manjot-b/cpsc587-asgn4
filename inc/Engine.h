@@ -48,7 +48,8 @@ class Engine
         GLuint instanceVBO;
         
         std::vector<Boid> boids;
-        uint boidCount = 2000;
+        uint bodyCount = 2000;
+        uint neighbours = 20;
         float modelScale;
         struct Cage cage;
         float avoidance = 0.065;
@@ -67,5 +68,6 @@ class Engine
         void update();
         void render();       
         void checkCollisions(Boid& boid, uint boidIdx); 
+        void parseInputFile();
 
 };

@@ -1,0 +1,8 @@
+avoidance 0.065
+cohesion 0.12
+gather 0.15
+max_speed 0.15
+body_count 2000
+neighbours 20
+time_step 0.008
+mesh_scale 0.011 

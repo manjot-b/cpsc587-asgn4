@@ -2,13 +2,16 @@
 #include <GLFW/glfw3.h>
 
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <memory>
-#include <map>
 #include <algorithm>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_access.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
 #include <cmath>
 #include <cstdlib>
 #include <ctime>
@@ -28,6 +31,7 @@ Engine::Engine(int argc, const char *argv[])
 		windowInitialized_ = false;
 	}
 	windowInitialized_ = true;
+	parseInputFile();
 	initScene();
 }
 
@@ -109,7 +113,7 @@ void Engine::initScene()
 	shader->setUniformMatrix4fv("projectionView", camera.getProjectionViewMatrix());
 	shader->unuse();
 
-	modelScale = 1 / max(fishMesh->bbox.width, max(fishMesh->bbox.height, fishMesh->bbox.depth)) * 0.011;
+	modelScale = 1 / max(fishMesh->bbox.width, max(fishMesh->bbox.height, fishMesh->bbox.depth)) * modelScale;
 	// scale = 0.1;
 	// float xTrans = -fishMesh->bbox.x - (fishMesh->bbox.width / 2);
 	// float yTrans = -fishMesh->bbox.y - (fishMesh->bbox.height / 2);
@@ -134,7 +138,7 @@ void Engine::initScene()
 	boids.push_back(boid);
 
 	srand(time(NULL));
-	for (uint i = 0; i < boidCount; i++)
+	for (uint i = 0; i < bodyCount; i++)
 	{
 		int x = rand();
 		int y = rand();
@@ -440,6 +444,53 @@ void Engine::checkCollisions(Boid& boid, uint boidIdx)
 			count++;
 		}
 
-		if (count == 20) break;	// boids only aware of a limited ammount of other boids
+		if (count == neighbours) break;	// boids only aware of a limited ammount of other boids
+	}
+}
+
+void Engine::parseInputFile()
+{
+	char delim = ' ';
+	ifstream inFile ("rsc/parameters.txt");
+	string line;
+	string tokens[2];
+	string token;
+
+	if (inFile.is_open())
+	{
+		while ( getline(inFile, line) )
+		{
+			int i = 0;
+			stringstream ss(line);
+			while ( getline(ss, token, delim))
+			{
+				tokens[i++] = token;
+			}
+
+			i = 0;
+
+			if ( tokens[0] == "avoidance" )
+				avoidance = stof( tokens[1] );
+			else if ( tokens[0] == "cohesion" )
+				cohesion = stof( tokens[1] );
+			else if ( tokens[0] == "gather" )
+				gather = stof( tokens[1] );
+			else if ( tokens[0] == "max_speed" )
+				maxSpeed = stof( tokens[1] );
+			else if ( tokens[0] == "body_count" )
+				bodyCount = stof( tokens[1] );
+			else if ( tokens[0] == "neighbours" )
+				neighbours = stof( tokens[1] );
+			else if ( tokens[0] == "time_step" )
+				deltaT = stof( tokens[1] );
+			else if ( tokens[0] == "mesh_scale" )
+				modelScale = stof( tokens[1] );
+			else
+				cerr << "Error. \'" << tokens[0]  << "\' is not a valid parameter in \'rsc\\parameters.txt\'" << endl;
+		}
+	}
+	else 
+	{
+		cerr << "Error. Unable to open \'rsc\\parameters.txt\'" << endl;
 	}
 }
