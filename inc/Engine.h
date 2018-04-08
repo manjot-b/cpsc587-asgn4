@@ -16,7 +16,7 @@
 struct Cage 
 {
     glm::vec3 origin = glm::vec3(-0.2f, -0.1f, 0.1f);
-    glm::vec3 dimension = glm::vec3(0.4f, 0.2f, 0.4f);
+    glm::vec3 dimension = glm::vec3(0.4f, 0.27f, 0.4f);
 };
 
 class Engine
@@ -48,11 +48,16 @@ class Engine
         GLuint instanceVBO;
         
         std::vector<Boid> boids;
+        uint boidCount = 2000;
         float modelScale;
         struct Cage cage;
+        float avoidance = 0.065;
+        float cohesion = 0.12;
+        float gather = 0.15;
+        float maxSpeed = 0.15;
 
         const float EPSILON = 1E-5;
-        float deltaT = 0.0001;                               // in miliseconds
+        float deltaT = 0.008;                               // in miliseconds
         uint updatesPerFrame = (1.0f / 60) / deltaT;
         glm::vec3 gravityForce = glm::vec3(0, -9.81f, 0);
 
@@ -61,6 +66,6 @@ class Engine
         void processInput();
         void update();
         void render();       
-        void checkCollisions(Boid& boid); 
+        void checkCollisions(Boid& boid, uint boidIdx); 
 
 };

@@ -10,6 +10,8 @@
 #include <glm/gtc/matrix_access.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <cmath>
+#include <cstdlib>
+#include <ctime>
 
 #include "Engine.h"
 #include "Shader.h"
@@ -107,7 +109,7 @@ void Engine::initScene()
 	shader->setUniformMatrix4fv("projectionView", camera.getProjectionViewMatrix());
 	shader->unuse();
 
-	modelScale = 1 / max(fishMesh->bbox.width, max(fishMesh->bbox.height, fishMesh->bbox.depth)) * 0.05;
+	modelScale = 1 / max(fishMesh->bbox.width, max(fishMesh->bbox.height, fishMesh->bbox.depth)) * 0.011;
 	// scale = 0.1;
 	// float xTrans = -fishMesh->bbox.x - (fishMesh->bbox.width / 2);
 	// float yTrans = -fishMesh->bbox.y - (fishMesh->bbox.height / 2);
@@ -122,14 +124,39 @@ void Engine::initScene()
 	struct Boid boid;
 	boid.mass = 1;
 	boid.weight = 1;
-	boid.velocity = glm::vec3(1, 0, -0.1) * 0.1f;
+	boid.velocity = glm::vec3(1, 0, -0.1) * 0.05f;
 	boid.netForce = glm::vec3(0, 0, 0);
-	boid.position = glm::vec3(0, 0, 0);
+	boid.position = glm::vec3(-0.1, 0, 0);
 	boids.push_back(boid);
-	boid.velocity = glm::vec3(0.1, 1, 0) * 0.1f;
+	boid.velocity = glm::vec3(0.1, 1, 0) * 0.05f;
 	boids.push_back(boid);
-	boid.velocity = glm::vec3(0.1, 0, 1) * 0.1f;
+	boid.velocity = glm::vec3(0.1, 0, 1) * 0.05f;
 	boids.push_back(boid);
+
+	srand(time(NULL));
+	for (uint i = 0; i < boidCount; i++)
+	{
+		int x = rand();
+		int y = rand();
+		int z = rand();
+
+		x %= 100000;
+		float randX = ((float)x) / 100000;
+		y %= 100000;
+		float randY = ((float)y) / 100000;
+		z %= 100000;
+		float randZ = ((float)x) / 100000;
+
+		randX = cage.dimension.x * randX + cage.origin.x;
+		randY = cage.dimension.y * randY + cage.origin.y;
+		randZ = cage.origin.z - cage.dimension.z * randZ;
+
+		boid.position = glm::vec3(randX, randY, randZ);
+		boid.velocity = glm::vec3(rand(), rand(), rand());
+		boid.velocity = glm::normalize(boid.velocity) * maxSpeed;
+		boids.push_back(boid);
+	}
+
 	modelMatrices = vector<glm::mat4>(boids.size(), glm::mat4(1.0f));
 
 
@@ -141,7 +168,7 @@ void Engine::initScene()
     // glBindVertexArray(VAO);
 	vertexArray->use();
     // vertex Attributes
-    GLsizei vec4Size = sizeof(glm::vec4);
+    size_t vec4Size = sizeof(glm::vec4);
     glEnableVertexAttribArray(2); 
     glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)0);
     glEnableVertexAttribArray(3); 
@@ -233,9 +260,15 @@ void Engine::update()
 	{
 		for (uint i = 0; i < boids.size(); i++)
 		{
-			checkCollisions(boids[i]);
+			checkCollisions(boids[i], i);
 			
 			boids[i].velocity += boids[i].netForce * boids[i].weight * deltaT;
+			if ( glm::length(boids[i].velocity) > maxSpeed)
+			{
+				boids[i].velocity = glm::normalize(boids[i].velocity);
+				boids[i].velocity *= maxSpeed;
+			}
+
 			boids[i].position += boids[i].velocity * deltaT;
 			
 			boids[i].netForce = glm::vec3(0, 0, 0);
@@ -269,7 +302,6 @@ void Engine::update()
 		normal = glm::normalize(normal);
 
 		glm::mat4 model(1.0);
-		// model = glm::scale(model, glm::vec3(modelScale, modelScale, modelScale));
 		model[0] = glm::vec4(binormal, 0) * modelScale;
 		model[1] = glm::vec4(normal, 0) * modelScale;
 		model[2] = glm::vec4(tangent, 0) * modelScale;
@@ -277,9 +309,6 @@ void Engine::update()
 		
 		modelMatrices[i] = model;
 	}
-
-	// modelMatrices[0] = glm::rotate(modelMatrices[0], 0.01f, glm::vec3(0, 1, 0));
-	// modelMatrices[1] = glm::rotate(modelMatrices[1], -0.01f, glm::vec3(0, 1, 0));
 	
 	vertexArray->use();
 	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
@@ -308,37 +337,109 @@ void Engine::render()
 	glfwPollEvents();
 }
 
-void Engine::checkCollisions(Boid& boid)
+void Engine::checkCollisions(Boid& boid, uint boidIdx)
 {
-	float cageForce = 20;
-	if (boid.position.x >= cage.origin.x + cage.dimension.x)
+	// CAGE COLLISION
+	// float constant = 0.01;
+	
+	if (boid.position.x > cage.origin.x + cage.dimension.x)
 	{
-		// boid.position.x = cage.origin.x + cage.dimension.x - EPSILON;
-		boid.netForce += glm::vec3(-cageForce, 0, 0);
+		// float cageForce = constant / glm::distance(boid.position.x, cage.origin.x + cage.dimension.x);
+		boid.position.x =  cage.origin.x + cage.dimension.x - EPSILON;
+		// boid.netForce += glm::vec3(-cageForce, 0, 0);
+		
+		glm::vec3 incident = boid.velocity;
+		incident = glm::normalize(incident);
+		boid.velocity = glm::reflect(incident, glm::vec3(-1, 0, 0)) * glm::length(boid.velocity);
 	}
 
-	if (boid.position.x <= cage.origin.x)
+	if (boid.position.x < cage.origin.x)
 	{
-		boid.netForce += glm::vec3(cageForce, 0, 0);
+		// float cageForce = constant / glm::distance(boid.position.x, cage.origin.x);
+		boid.position.x = cage.origin.x + EPSILON;
+		// boid.netForce += glm::vec3(cageForce, 0, 0);
+		glm::vec3 incident = boid.velocity;
+		incident = glm::normalize(incident);
+		boid.velocity = glm::reflect(incident, glm::vec3(1, 0, 0)) * glm::length(boid.velocity);
 	}
 
-	if (boid.position.y >= cage.origin.y + cage.dimension.y)
+	if (boid.position.y > cage.origin.y + cage.dimension.y)
 	{
-		boid.netForce += glm::vec3(0, -cageForce, 0);
+		// float cageForce = constant / glm::distance(boid.position.y, cage.origin.y + cage.dimension.y);
+		boid.position.y = cage.origin.y + cage.dimension.y - EPSILON;
+		// boid.netForce += glm::vec3(0, -cageForce, 0);
+		glm::vec3 incident = boid.velocity;
+		incident = glm::normalize(incident);
+		boid.velocity = glm::reflect(incident, glm::vec3(0, -1, 0)) * glm::length(boid.velocity);
 	}
 
-	if (boid.position.y <= cage.origin.y)
+	if (boid.position.y < cage.origin.y)
 	{
-		boid.netForce += glm::vec3(0, cageForce, 0);
+		// float cageForce = constant / glm::distance(boid.position.y, cage.origin.y);
+		boid.position.y = cage.origin.y + EPSILON;
+		// boid.netForce += glm::vec3(0, cageForce, 0);
+		glm::vec3 incident = boid.velocity;
+		incident = glm::normalize(incident);
+		boid.velocity = glm::reflect(incident, glm::vec3(0, 1, 0)) * glm::length(boid.velocity);
 	}
 
-	if (boid.position.z >= cage.origin.z)
+	if (boid.position.z > cage.origin.z)
 	{
-		boid.netForce += glm::vec3(0, 0, -cageForce);
+		// float cageForce = constant / glm::distance(boid.position.z, cage.origin.z);
+		boid.position.z = cage.origin.z - EPSILON;
+		// boid.netForce += glm::vec3(0, 0, -cageForce);
+		glm::vec3 incident = boid.velocity;
+		incident = glm::normalize(incident);
+		boid.velocity = glm::reflect(incident, glm::vec3(0, 0, -1)) * glm::length(boid.velocity);
 	}
 
-	if (boid.position.z <= cage.origin.z - cage.dimension.z)
+	if (boid.position.z < cage.origin.z - cage.dimension.z)
 	{
-		boid.netForce += glm::vec3(0, 0, cageForce);
+		// float cageForce = constant / glm::distance(boid.position.z, cage.origin.z - cage.dimension.z);
+		boid.position.z = cage.origin.z - cage.dimension.z + EPSILON;
+		// boid.netForce += glm::vec3(0, 0, cageForce);
+		glm::vec3 incident = boid.velocity;
+		incident = glm::normalize(incident);
+		boid.velocity = glm::reflect(incident, glm::vec3(0, 0, 1)) * glm::length(boid.velocity);
+	}
+
+	// BOID COLLISION
+	uint count = 0;
+	for (uint i = boidIdx + 1; i < boids.size(); i++)
+	{
+		float dist = glm::distance(boid.position, boids[i].position);
+		if (dist <= 0)
+			return;
+
+		if (dist < avoidance)
+		{
+			glm::vec3 direction = boid.position - boids[i].position;
+			direction = normalize(direction);
+			float forceMagnitude = 0.1 / (dist);
+			glm::vec3 force = direction * forceMagnitude;
+			boid.netForce += force;
+			boids[i].netForce -= force;
+			count++;
+		}
+		else if (dist < cohesion)
+		{
+			float forceMagnitude = 0.1 / dist;
+			glm::vec3 force = ( (boid.velocity + boids[i].velocity) / 2.0f) * forceMagnitude;
+			boid.netForce += force;
+			boids[i].netForce += force;
+			count++;
+		}
+		else if (dist < gather)
+		{
+			glm::vec3 direction = boid.position - boids[i].position;
+			direction = normalize(direction);
+			float forceMagnitude = 0.1 / (dist);
+			glm::vec3 force = direction * forceMagnitude;
+			boid.netForce -= force;
+			boids[i].netForce += force;
+			count++;
+		}
+
+		if (count == 20) break;	// boids only aware of a limited ammount of other boids
 	}
 }
